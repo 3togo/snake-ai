@@ -1,7 +1,8 @@
 import math
 
-import gym
+# import gym
 import numpy as np
+import gymnasium as gym
 
 from snake_game import SnakeGame
 
@@ -14,7 +15,7 @@ class SnakeEnv(gym.Env):
         self.silent_mode = silent_mode
 
         self.action_space = gym.spaces.Discrete(4) # 0: UP, 1: LEFT, 2: RIGHT, 3: DOWN
-        
+
         self.observation_space = gym.spaces.Box(
             low=0, high=255,
             shape=(84, 84, 3),
@@ -42,7 +43,7 @@ class SnakeEnv(gym.Env):
 
         obs = self._generate_observation()
         return obs
-    
+
     def step(self, action):
         self.done, info = self.game.step(action) # info = {"snake_size": int, "snake_head_pos": np.array, "prev_snake_head_pos": np.array, "food_pos": np.array, "food_obtained": bool}
         obs = self._generate_observation()
@@ -56,21 +57,21 @@ class SnakeEnv(gym.Env):
             if not self.silent_mode:
                 self.game.sound_victory.play()
             return obs, reward, self.done, info
-        
+
         if self.reward_step_counter > self.step_limit: # Step limit reached, game over.
             self.reward_step_counter = 0
             self.done = True
-        
+
         if self.done: # Snake bumps into wall or itself. Episode is over.
             # Game Over penalty is based on snake size.
-            reward = - math.pow(self.max_growth, (self.grid_size - info["snake_size"]) / self.max_growth) # (-max_growth, -1)            
+            reward = - math.pow(self.max_growth, (self.grid_size - info["snake_size"]) / self.max_growth) # (-max_growth, -1)
             reward = reward * 0.1
             return obs, reward, self.done, info
-          
+
         elif info["food_obtained"]: # Food eaten. Reward boost on snake size.
             reward = info["snake_size"] / self.grid_size
             self.reward_step_counter = 0 # Reset reward step counter
-        
+
         else:
             # Give a tiny reward/penalty to the agent based on whether it is heading towards the food or not.
             # Not competing with game over penalty or the food eaten reward.
@@ -84,13 +85,13 @@ class SnakeEnv(gym.Env):
         # min_score: -14.1
 
         return obs, reward, self.done, info
-    
+
     def render(self):
         self.game.render()
 
     def get_action_mask(self):
         return np.array([[self._check_action_validity(a) for a in range(self.action_space.n)]])
-    
+
     # Check if the action is against the current direction of the snake or is ending the game.
     def _check_action_validity(self, action):
         current_direction = self.game.direction
@@ -108,13 +109,13 @@ class SnakeEnv(gym.Env):
             else:
                 col -= 1
 
-        elif action == 2: # RIGHT 
+        elif action == 2: # RIGHT
             if current_direction == "LEFT":
                 return False
             else:
-                col += 1     
-        
-        elif action == 3: # DOWN 
+                col += 1
+
+        elif action == 3: # DOWN
             if current_direction == "UP":
                 return False
             else:
@@ -149,10 +150,10 @@ class SnakeEnv(gym.Env):
 
         # Set the snake body to gray with linearly decreasing intensity from head to tail.
         obs[tuple(np.transpose(self.game.snake))] = np.linspace(200, 50, len(self.game.snake), dtype=np.uint8)
-        
+
         # Stack single layer into 3-channel-image.
         obs = np.stack((obs, obs, obs), axis=-1)
-        
+
         # Set the snake head to green and the tail to blue
         obs[tuple(self.game.snake[0])] = [0, 255, 0]
         obs[tuple(self.game.snake[-1])] = [255, 0, 0]
@@ -172,7 +173,7 @@ class SnakeEnv(gym.Env):
 
 # if __name__ == "__main__":
 #     env = SnakeEnv(silent_mode=False)
-    
+
     # # Test Init Efficiency
     # print(MODEL_PATH_S)
     # print(MODEL_PATH_L)
@@ -185,7 +186,7 @@ class SnakeEnv(gym.Env):
 
     # # 0: UP, 1: LEFT, 2: RIGHT, 3: DOWN
     # action_list = [1, 1, 1, 0, 0, 0, 2, 2, 2, 3, 3, 3]
-    
+
     # for _ in range(NUM_EPISODES):
     #     obs = env.reset()
     #     done = False
@@ -201,7 +202,7 @@ class SnakeEnv(gym.Env):
     #         if np.absolute(reward) > 0.001:
     #             print(reward)
     #         env.render()
-            
+
     #         time.sleep(RENDER_DELAY)
     #     # print(info["snake_length"])
     #     # print(info["food_pos"])
@@ -209,6 +210,6 @@ class SnakeEnv(gym.Env):
     #     print("sum_reward: %f" % sum_reward)
     #     print("episode done")
     #     # time.sleep(100)
-    
+
     # env.close()
     # print("Average episode reward for random strategy: {}".format(sum_reward/NUM_EPISODES))
